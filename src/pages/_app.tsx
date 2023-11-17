@@ -5,6 +5,7 @@ import { type AppType } from "next/app";
 import { api } from "@/utils/api";
 
 import "@/styles/globals.css";
+import Navbar from "@/components/global/Navbar";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -12,6 +13,8 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
+      <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+      <Navbar />
       <Component {...pageProps} />
     </SessionProvider>
   );
