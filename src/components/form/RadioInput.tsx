@@ -1,7 +1,7 @@
 import { type FieldErrors, type UseFormRegister } from "react-hook-form";
+import { type FormItemOption } from "@prisma/client";
 
 import { type FormData } from "@/models/Form";
-import { type FormItemOption } from "@prisma/client";
 
 interface RadioInputProps {
   id: string;

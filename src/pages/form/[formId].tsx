@@ -1,45 +1,17 @@
-import { signIn, signOut, useSession } from "next-auth/react";
+import { type GetServerSidePropsContext } from "next";
 import Head from "next/head";
-import Link from "next/link";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { getSession } from "next-auth/react";
 
 import { api } from "@/utils/api";
-import { RouterOutputs } from "@/utils/api";
-import { getSession } from "next-auth/react";
-// import { DynamicFormData, formSchema } from "@/models/Form";
-import { generateDynamicFormSchema } from "@/models/Form";
-import { GetServerSidePropsContext } from "next";
 import { db } from "@/server/db";
-import TextInput from "@/components/form/TextInput";
 import Form from "@/components/form/Form";
-import { useEffect, useState } from "react";
-
-// type FormInputs = {
-//   name: string;
-//   email: string;
-//   occupation: string[];
-//   gender: string;
-//   country: string;
-//   file: FileList;
-//   date: string;
-//   time: string;
-// };
 
 interface FormPageProps {
   formId: string | undefined;
-  // formData: RouterOutputs["form"]["getFormData"];
 }
 
 export default function FormPage({ formId }: FormPageProps) {
-  const {
-    data: formData,
-    isLoading,
-    isError,
-    error,
-    isFetched,
-  } = api.form.getFormData.useQuery(
+  const { data: formData } = api.form.getFormData.useQuery(
     {
       formId: formId ?? "",
     },
@@ -66,10 +38,36 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const formId = ctx.params?.formId;
   const session = await getSession(ctx);
 
+  if (typeof formId !== "string" || !formId || !session) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
+  const form = await db.form.findUnique({
+    where: {
+      id: formId,
+    },
+    select: {
+      createdBy: true,
+    },
+  });
+
+  if (form?.createdBy.id !== session.user?.id) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
   return {
     props: {
       formId,
-      // formData,
     },
   };
 };

@@ -1,42 +1,41 @@
 import { z } from "zod";
 import type { FormItem } from "@prisma/client";
 
-const textFieldSchema = z
-  .string()
-  .trim()
-  .min(2, { message: "Name must be 2 or more characters long" });
+const baseStringField = z.string().trim();
 
-const emailFieldSchema = z
-  .string()
-  .email("Please enter a valid email address")
-  .trim()
-  .toLowerCase();
+const textFieldSchema = baseStringField.min(2, {
+  message: "Name must be at least 2 characters long.",
+});
+
+const emailFieldSchema = baseStringField
+  .email({ message: "Please enter a valid email address." })
+  .transform((str) => str.toLowerCase());
 
 const checkboxFieldSchema = z
-  .array(z.string(), {
-    invalid_type_error: "Please select at least one item",
-  })
-  .min(1, { message: "Please select at least one item" });
+  .array(z.string())
+  .min(1, { message: "Please select at least one option." });
 
-const radioFieldSchema = z.string({
-  invalid_type_error: "Please select one item",
+const radioFieldSchema = baseStringField.min(1, {
+  message: "Please select an option.",
 });
 
-const dropdownFileSchema = z.string({
-  invalid_type_error: "Please select one item",
+const dropdownFieldSchema = baseStringField.min(1, {
+  message: "Please select an option.",
 });
 
-const fileFieldSchema = z.string().url({
-  message: "Please upload a file",
-});
-
-const dateFieldSchema = z
+const fileFieldSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format");
+  .url({ message: "Invalid file URL. Please upload a file." });
 
-const timeFieldSchema = z
-  .string()
-  .regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, "Invalid time format");
+const dateFieldSchema = baseStringField.regex(
+  /^\d{4}-\d{2}-\d{2}$/,
+  "Invalid date format. Please use YYYY-MM-DD.",
+);
+
+const timeFieldSchema = baseStringField.regex(
+  /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/,
+  "Invalid time format. Please use HH:MM or HH:MM:SS.",
+);
 
 const getFieldSchemaByType = (type: string) => {
   switch (type) {
@@ -49,7 +48,7 @@ const getFieldSchemaByType = (type: string) => {
     case "RADIO":
       return radioFieldSchema;
     case "DROPDOWN":
-      return dropdownFileSchema;
+      return dropdownFieldSchema;
     case "FILE":
       return fileFieldSchema;
     case "DATE":
@@ -66,7 +65,6 @@ export const generateDynamicFormSchema = (formItems: FormItem[]) => {
       [item.id]: getFieldSchemaByType(item.type),
     };
   }, {});
-  console.log("dynamicFormSchema", dynamicFormSchema);
 
   return z.object(dynamicFormSchema);
 };

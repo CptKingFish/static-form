@@ -1,19 +1,14 @@
-import { signIn, signOut, useSession } from "next-auth/react";
-import Head from "next/head";
-import Link from "next/link";
+import { useEffect } from "react";
 
+import { type z } from "zod";
+import Head from "next/head";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
 
 import { api } from "@/utils/api";
-import { RouterOutputs } from "@/utils/api";
-import { getSession } from "next-auth/react";
-// import { DynamicFormData, formSchema } from "@/models/Form";
+import { type RouterOutputs } from "@/utils/api";
 import { generateDynamicFormSchema } from "@/models/Form";
-import { GetServerSidePropsContext } from "next";
-import { db } from "@/server/db";
 import TextInput from "@/components/form/TextInput";
-import { z } from "zod";
 import EmailInput from "./EmailInput";
 import CheckboxInput from "./CheckboxInput";
 import RadioInput from "./RadioInput";
@@ -22,33 +17,83 @@ import DateInput from "./DateInput";
 import TimeInput from "./TimeInput";
 import FileInput from "./FileInput";
 
+type FormInputs = Record<string, string | string[] | FileList>;
 interface FormPageProps {
   formData: RouterOutputs["form"]["getFormData"];
 }
 
 export default function Form({ formData }: FormPageProps) {
-  type FormInputs = Record<string, string | string[] | FileList>;
   const dynamicFormSchema = generateDynamicFormSchema(formData?.items ?? []);
+
+  const { mutateAsync: submitForm } = api.form.submitForm.useMutation();
 
   const {
     register,
     handleSubmit,
-    trigger,
     reset,
-    getFieldState,
     getValues,
-    formState: { errors, isValid, isLoading: isFormLoading },
+    setValue,
+
+    formState: { errors, isValid, isLoading },
   } = useForm<z.infer<typeof dynamicFormSchema>>({
-    reValidateMode: "onBlur",
+    reValidateMode: "onSubmit",
     resolver: zodResolver(dynamicFormSchema),
   });
 
-  const onSubmit: SubmitHandler<FormInputs> = (data) => {
-    console.log("data", data);
-    reset();
-  };
+  useEffect(() => {
+    if (!formData) return;
+    formData.items.forEach((item) => {
+      switch (item.type) {
+        case "TEXT":
+        case "EMAIL":
+        case "FILE":
+        case "DATE":
+        case "TIME":
+          setValue(
+            item.id as never,
+            (item.responses[0]?.response ?? "") as never,
+          );
+          break;
+        case "RADIO":
+        case "DROPDOWN":
+          setValue(
+            item.id as never,
+            (item.responses[0]?.options[0]?.id ?? "") as never,
+          );
+          break;
+        case "CHECKBOX":
+          setValue(
+            item.id as never,
+            (item.responses[0]?.options?.map((option) => {
+              return option.id;
+            }) ?? []) as never,
+          );
+          break;
+        default:
+          return null;
+      }
+    });
+  }, []);
 
-  console.log("errors", errors);
+  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+    if (!formData || !isValid || isLoading) return;
+    console.log("data", data);
+    await submitForm(
+      {
+        formId: formData.id,
+        responses: data as Record<string, string | string[]>,
+      },
+      {
+        onSuccess: () => {
+          alert("Form submitted successfully!");
+        },
+        onError: () => {
+          alert("Something went wrong!");
+        },
+      },
+    );
+    // reset();
+  };
 
   return (
     <>
@@ -59,12 +104,6 @@ export default function Form({ formData }: FormPageProps) {
       </Head>
       <main className="flex min-h-screen w-full flex-col items-center bg-slate-200">
         <>
-          {/* <button
-            onClick={() => trigger()}
-            className="mb-2 rounded bg-gray-300 p-2 text-xl"
-          >
-            Display Data Requirements
-          </button> */}
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="mt-8 flex min-w-[50%] flex-col"
@@ -81,7 +120,10 @@ export default function Form({ formData }: FormPageProps) {
               switch (item.type) {
                 case "TEXT":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <TextInput
                           key={item.id}
@@ -96,7 +138,10 @@ export default function Form({ formData }: FormPageProps) {
                   );
                 case "EMAIL":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <EmailInput
                           id={item.id}
@@ -110,7 +155,10 @@ export default function Form({ formData }: FormPageProps) {
                   );
                 case "CHECKBOX":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <CheckboxInput
                           id={item.id}
@@ -126,7 +174,10 @@ export default function Form({ formData }: FormPageProps) {
 
                 case "RADIO":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <RadioInput
                           id={item.id}
@@ -141,7 +192,10 @@ export default function Form({ formData }: FormPageProps) {
                   );
                 case "DROPDOWN":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <DropdownInput
                           id={item.id}
@@ -156,7 +210,10 @@ export default function Form({ formData }: FormPageProps) {
                   );
                 case "FILE":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <FileInput
                           id={item.id}
@@ -164,13 +221,18 @@ export default function Form({ formData }: FormPageProps) {
                           text={item.text}
                           register={register}
                           errors={errors}
+                          getValues={getValues}
+                          setValue={setValue}
                         />
                       </div>
                     </div>
                   );
                 case "DATE":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <DateInput
                           id={item.id}
@@ -184,7 +246,10 @@ export default function Form({ formData }: FormPageProps) {
                   );
                 case "TIME":
                   return (
-                    <div className="mb-12 w-full rounded bg-white shadow-sm">
+                    <div
+                      key={item.id}
+                      className="mb-12 w-full rounded bg-white shadow-sm"
+                    >
                       <div className="px-4 py-4">
                         <TimeInput
                           id={item.id}

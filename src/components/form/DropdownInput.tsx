@@ -39,7 +39,9 @@ export default function DropdownInput({
           {...register(id)}
         >
           {options.map((option) => (
-            <option key={option.id}>{option.text}</option>
+            <option key={option.id} value={option.id}>
+              {option.text}
+            </option>
           ))}
         </select>
       </div>

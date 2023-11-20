@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
 type FormItemType =
@@ -127,8 +123,7 @@ export const formRouter = createTRPCRouter({
         }
       });
 
-      // Execute all operations in a transaction
-      const result = await ctx.db.$transaction(formItemCreations);
+      await ctx.db.$transaction(formItemCreations);
 
       return form;
     }),
@@ -172,7 +167,7 @@ export const formRouter = createTRPCRouter({
         formId: z.string(),
         responses: z.record(
           z.string(),
-          z.union([z.string(), z.array(z.string()), z.number()]),
+          z.union([z.string(), z.array(z.string())]),
         ),
       }),
     )
@@ -189,7 +184,10 @@ export const formRouter = createTRPCRouter({
       });
 
       if (!form) {
-        throw new Error("Form not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Form not found",
+        });
       }
 
       const formItemIdsAndTypes = form.items.map((item) => {
@@ -216,28 +214,29 @@ export const formRouter = createTRPCRouter({
         );
 
         // validate response
-        if (type in ["RADIO", "DROPDOWN"]) {
+        if (["RADIO", "DROPDOWN"].includes(type)) {
           if (!response || typeof response !== "string") {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Invalid response",
+              message: "Invalid radio/dropdown response",
             });
           }
-        } else if (type in ["CHECKBOX"]) {
+        } else if (["CHECKBOX"].includes(type)) {
           if (!Array.isArray(response)) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Invalid response",
+              message: "Invalid checkbox response",
             });
           }
-        } else if (type in ["TEXT", "EMAIL", "FILE", "DATE", "TIME"]) {
+        } else if (["TEXT", "EMAIL", "FILE", "DATE", "TIME"].includes(type)) {
           if (!response || typeof response !== "string") {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Invalid response",
+              message: "Invalid text/email/file/date/time response",
             });
           }
         } else {
+          console.log(["TEXT"].includes(type));
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Invalid response",
@@ -245,46 +244,88 @@ export const formRouter = createTRPCRouter({
         }
 
         if (existingResponse) {
-          if (type in ["RADIO", "DROPDOWN"]) {
+          if (["RADIO", "DROPDOWN"].includes(type)) {
             return ctx.db.formItemResponse.update({
               where: { id: existingResponse.id },
               data: {
                 options: {
-                  set: [response as string],
+                  connect: { id: response as string },
                 },
               },
             });
-          } else if (type in ["CHECKBOX"]) {
+          } else if (["CHECKBOX"].includes(type)) {
             return ctx.db.formItemResponse.update({
               where: { id: existingResponse.id },
               data: {
                 options: {
-                  set: response as string[],
+                  connect: (response as string[]).map((optionId) => ({
+                    id: optionId,
+                  })),
                 },
               },
             });
-          } else {
+          } else if (["TEXT", "EMAIL", "FILE", "DATE", "TIME"].includes(type)) {
             return ctx.db.formItemResponse.update({
               where: { id: existingResponse.id },
               data: {
                 response: response as string,
               },
             });
+          } else {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Invalid response",
+            });
           }
         } else {
-          // Create new response
-          return ctx.db.formItemResponse.create({
-            data: {
-              formItemId: item.id,
-              userId: ctx.session.user.id,
-              optionId: response,
-            },
-          });
+          if (["RADIO", "DROPDOWN"].includes(type)) {
+            return ctx.db.formItemResponse.create({
+              data: {
+                formItemId: item.id,
+                userId: ctx.session.user.id,
+                options: {
+                  connect: { id: response as string },
+                },
+              },
+            });
+          } else if (["CHECKBOX"].includes(type)) {
+            return ctx.db.formItemResponse.create({
+              data: {
+                formItemId: item.id,
+                userId: ctx.session.user.id,
+                options: {
+                  connect: (response as string[]).map((optionId) => ({
+                    id: optionId,
+                  })),
+                },
+              },
+            });
+          } else if (["TEXT", "EMAIL", "FILE", "DATE", "TIME"].includes(type)) {
+            return ctx.db.formItemResponse.create({
+              data: {
+                formItemId: item.id,
+                userId: ctx.session.user.id,
+                response: response as string,
+              },
+            });
+          } else {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Invalid response",
+            });
+          }
         }
       });
 
       // Execute all operations in a transaction
       const result = await ctx.db.$transaction(formItemResponseCreations);
+
+      await ctx.db.form.update({
+        where: { id: form.id },
+        data: {
+          updatedAt: new Date(),
+        },
+      });
 
       return result;
     }),

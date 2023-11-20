@@ -1,6 +1,7 @@
-import { api } from "@/utils/api";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+
+import { api } from "@/utils/api";
 
 interface FormMenuItemProps {
   id: string;
@@ -15,14 +16,11 @@ export default function FormMenuItem({
   updatedAt,
   refetchFormList,
 }: FormMenuItemProps) {
-  const {
-    mutateAsync: deleteForm,
-    isLoading,
-    isError,
-    error,
-  } = api.form.deleteForm.useMutation();
+  const { mutateAsync: deleteForm, isLoading } =
+    api.form.deleteForm.useMutation();
 
   const handleDeleteForm = async () => {
+    if (!id || isLoading) return;
     try {
       await deleteForm({ formId: id });
       refetchFormList();

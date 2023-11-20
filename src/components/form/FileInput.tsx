@@ -1,9 +1,15 @@
-import { type FieldErrors, type UseFormRegister } from "react-hook-form";
+import { useEffect, useState } from "react";
+
+import {
+  type UseFormGetValues,
+  type FieldErrors,
+  type UseFormRegister,
+  type UseFormSetValue,
+} from "react-hook-form";
+import Image from "next/image";
+import { UploadDropzone } from "@/utils/uploadthing";
 
 import { type FormData } from "@/models/Form";
-import { UploadDropzone } from "@/utils/uploadthing";
-import { useState } from "react";
-import Image from "next/image";
 
 interface FileInputProps {
   id: string;
@@ -11,6 +17,8 @@ interface FileInputProps {
   text: string;
   register: UseFormRegister<FormData>;
   errors: FieldErrors<FormData>;
+  getValues: UseFormGetValues<Record<string, unknown>>;
+  setValue: UseFormSetValue<Record<string, unknown>>;
 }
 
 export default function FileInput({
@@ -19,8 +27,17 @@ export default function FileInput({
   text,
   register,
   errors,
+  getValues,
+  setValue,
 }: FileInputProps) {
-  const [url, setUrl] = useState<string>("");
+  const [hidden, setHidden] = useState(true);
+
+  useEffect(() => {
+    if (getValues(id) !== "") {
+      setHidden(false);
+    }
+  }, [getValues, id]);
+
   return (
     <div className="col-span-full">
       <div className="flex justify-between">
@@ -47,37 +64,41 @@ export default function FileInput({
               <input
                 id="file-upload"
                 type="text"
-                value={url}
                 className="sr-only"
                 {...register(id)}
               />
               <UploadDropzone
                 endpoint={"imageUpload"}
                 onClientUploadComplete={(res) => {
-                  setUrl(res?.[0]?.url ?? "");
+                  setValue(id, res?.[0]?.url ?? "");
+                  setHidden(false);
                 }}
                 onUploadError={(error: Error) => {
                   console.log(error);
                 }}
               />
-              <button
-                type="button"
-                className="mt-3 w-full rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                onClick={() => {
-                  setUrl("");
-                }}
-              >
-                Clear
-              </button>
+              {(!!getValues(id) as boolean) && (
+                <button
+                  type="button"
+                  hidden={hidden}
+                  className="mt-3 w-full rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                  onClick={() => {
+                    setValue(id, "");
+                    setHidden(true);
+                  }}
+                >
+                  Clear
+                </button>
+              )}
             </label>
-            {/* <p className="pl-1">or drag and drop</p> */}
           </div>
         </div>
-        {url && (
+        {(!!getValues(id) as boolean) && (
           <Image
-            src={url}
+            src={getValues(id) as string}
             width={400}
             height={500}
+            hidden={hidden}
             alt="uploaded img"
             className="h-64"
           />

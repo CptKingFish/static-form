@@ -1,11 +1,11 @@
 import { Fragment, useState } from "react";
-import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
+
+import { Menu, Transition } from "@headlessui/react";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
-import { classNames } from "@/lib/helpers";
-import { api } from "@/utils/api";
+import Link from "next/link";
+
 import CreateFormModal from "./CreateFormModal";
 
 export default function Navbar() {
@@ -22,7 +22,7 @@ export default function Navbar() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 justify-between">
               <div className="flex">
-                <div className="flex flex-shrink-0 items-center">
+                <Link href="/" className="flex flex-shrink-0 items-center">
                   <Image
                     className="h-8 w-auto"
                     height={500}
@@ -30,17 +30,22 @@ export default function Navbar() {
                     src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
                     alt="Your Company"
                   />
-                </div>
-                <div className="ms-3 flex items-center md:ml-6 md:space-x-8">
-                  <button
-                    type="button"
-                    className="relative inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    onClick={() => setOpenCreateFormModal(true)}
-                  >
-                    <PlusIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
-                    New Form
-                  </button>
-                </div>
+                </Link>
+                {sessionData && (
+                  <div className="ms-3 flex items-center md:ml-6 md:space-x-8">
+                    <button
+                      type="button"
+                      className="relative inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      onClick={() => setOpenCreateFormModal(true)}
+                    >
+                      <PlusIcon
+                        className="-ml-0.5 h-5 w-5"
+                        aria-hidden="true"
+                      />
+                      New Form
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex items-center">
                 <div className="md:ml-4 md:flex md:flex-shrink-0 md:items-center">
