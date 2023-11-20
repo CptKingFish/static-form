@@ -1,0 +1,45 @@
+import { type FieldErrors, type UseFormRegister } from "react-hook-form";
+
+import { type FormData } from "@/models/Form";
+
+interface DateInputProps {
+  id: string;
+  index: number;
+  text: string;
+  register: UseFormRegister<FormData>;
+  errors: FieldErrors<FormData>;
+}
+
+export default function DateInput({
+  id,
+  index,
+  text,
+  register,
+  errors,
+}: DateInputProps) {
+  return (
+    <>
+      <div className="flex justify-between">
+        <label className="text-md block font-medium leading-6 text-gray-900">
+          {text}
+        </label>
+        {errors?.[id] && (
+          <p className="self-start rounded-md px-2 italic text-red-500">
+            {errors?.[id]?.message ?? "This field is required"}
+          </p>
+        )}
+      </div>
+      <div className="mt-2">
+        <input
+          type="date"
+          id="date-picker"
+          // value="2018-07-22"
+          // min="2018-01-01"
+          // max="2018-12-31"
+          className="block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
+          {...register(id)}
+        />
+      </div>
+    </>
+  );
+}

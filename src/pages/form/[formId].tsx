@@ -2,10 +2,51 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
 
-import { api } from "@/utils/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, SubmitHandler } from "react-hook-form";
 
-export default function FormPage() {
-  const hello = api.post.hello.useQuery({ text: "from tRPC" });
+import { api } from "@/utils/api";
+import { RouterOutputs } from "@/utils/api";
+import { getSession } from "next-auth/react";
+// import { DynamicFormData, formSchema } from "@/models/Form";
+import { generateDynamicFormSchema } from "@/models/Form";
+import { GetServerSidePropsContext } from "next";
+import { db } from "@/server/db";
+import TextInput from "@/components/form/TextInput";
+import Form from "@/components/form/Form";
+import { useEffect, useState } from "react";
+
+// type FormInputs = {
+//   name: string;
+//   email: string;
+//   occupation: string[];
+//   gender: string;
+//   country: string;
+//   file: FileList;
+//   date: string;
+//   time: string;
+// };
+
+interface FormPageProps {
+  formId: string | undefined;
+  // formData: RouterOutputs["form"]["getFormData"];
+}
+
+export default function FormPage({ formId }: FormPageProps) {
+  const {
+    data: formData,
+    isLoading,
+    isError,
+    error,
+    isFetched,
+  } = api.form.getFormData.useQuery(
+    {
+      formId: formId ?? "",
+    },
+    {
+      enabled: !!formId,
+    },
+  );
 
   return (
     <>
@@ -15,286 +56,20 @@ export default function FormPage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex min-h-screen flex-col items-center bg-slate-200">
-        <div className="mt-8 flex min-w-[50%] flex-col">
-          <header className="mb-16 w-full bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <h1 className="text-lg font-semibold leading-6 text-gray-900">
-                Dashboard
-              </h1>
-            </div>
-          </header>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <label
-                htmlFor="name"
-                className="text-md block font-medium leading-6 text-gray-900"
-              >
-                Name
-              </label>
-              <div className="mt-2">
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  className="block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  placeholder="Sithu"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <label
-                htmlFor="email"
-                className="text-md block font-medium leading-6 text-gray-900"
-              >
-                Email
-              </label>
-              <div className="mt-2">
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  placeholder="kaung@gmail.com"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <fieldset>
-                <legend className="text-sm font-semibold leading-6 text-gray-900">
-                  Occupation
-                </legend>
-                <div className="mt-6 space-y-6">
-                  <div className="relative flex gap-x-3">
-                    <div className="flex h-6 items-center">
-                      <input
-                        id="student"
-                        name="student"
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                      />
-                    </div>
-                    <div className="text-sm leading-6">
-                      <label
-                        htmlFor="comments"
-                        className="font-medium text-gray-900"
-                      >
-                        Student
-                      </label>
-                    </div>
-                  </div>
-                  <div className="relative flex gap-x-3">
-                    <div className="flex h-6 items-center">
-                      <input
-                        id="working"
-                        name="working"
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                      />
-                    </div>
-                    <div className="text-sm leading-6">
-                      <label
-                        htmlFor="working"
-                        className="font-medium text-gray-900"
-                      >
-                        Working
-                      </label>
-                    </div>
-                  </div>
-                  <div className="relative flex gap-x-3">
-                    <div className="flex h-6 items-center">
-                      <input
-                        id="other"
-                        name="other"
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                      />
-                    </div>
-                    <div className="text-sm leading-6">
-                      <label
-                        htmlFor="other"
-                        className="font-medium text-gray-900"
-                      >
-                        Other
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </fieldset>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <fieldset>
-                <legend className="text-sm font-semibold leading-6 text-gray-900">
-                  Gender
-                </legend>
-                <div className="mt-6 space-y-6">
-                  <div className="flex items-center gap-x-3">
-                    <input
-                      id="male"
-                      name="gender"
-                      type="radio"
-                      className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                    />
-                    <label
-                      htmlFor="male"
-                      className="block text-sm font-medium leading-6 text-gray-900"
-                    >
-                      Male
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-x-3">
-                    <input
-                      id="female"
-                      name="gender"
-                      type="radio"
-                      className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                    />
-                    <label
-                      htmlFor="female"
-                      className="block text-sm font-medium leading-6 text-gray-900"
-                    >
-                      Female
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-x-3">
-                    <input
-                      id="others"
-                      name="gender"
-                      type="radio"
-                      className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                    />
-                    <label
-                      htmlFor="others"
-                      className="block text-sm font-medium leading-6 text-gray-900"
-                    >
-                      Others
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <label
-                htmlFor="country"
-                className="text-sm font-semibold leading-6 text-gray-900"
-              >
-                Country
-              </label>
-              <div className="mt-2">
-                <select
-                  id="country"
-                  name="country"
-                  autoComplete="country-name"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                >
-                  <option>United States</option>
-                  <option>Canada</option>
-                  <option>Mexico</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <div className="col-span-full">
-                <label
-                  htmlFor="file"
-                  className="text-sm font-semibold leading-6 text-gray-900"
-                >
-                  File
-                </label>
-                <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-                  <div className="text-center">
-                    <div className="mt-4 flex text-sm leading-6 text-gray-600">
-                      <label
-                        htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
-                      >
-                        <span>Upload a file</span>
-                        <input
-                          id="file-upload"
-                          name="file-upload"
-                          type="file"
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    {/* <p className="text-xs leading-5 text-gray-600">
-                      PNG, JPG, GIF up to 10MB
-                    </p> */}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <label
-                htmlFor="date-picker"
-                className="text-sm font-semibold leading-6 text-gray-900"
-              >
-                Date
-              </label>
-              <div className="mt-2">
-                <input
-                  type="date"
-                  id="date-picker"
-                  name="date-picker"
-                  // value="2018-07-22"
-                  // min="2018-01-01"
-                  // max="2018-12-31"
-                  className="block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="mb-12 w-full rounded bg-white shadow-sm">
-            <div className="px-4 py-4">
-              <label
-                htmlFor="time-picker"
-                className="text-sm font-semibold leading-6 text-gray-900"
-              >
-                Time
-              </label>
-              <div className="mt-2">
-                <input
-                  type="time"
-                  id="time-picker"
-                  name="time-picker"
-                  // value="2018-07-22"
-                  // min="2018-01-01"
-                  // max="2018-12-31"
-                  className="block w-full rounded-md border-0 px-3 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="mb-12 w-full">
-            <div className="flex justify-between">
-              <button
-                type="button"
-                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
-        </div>
+        {formData ? <Form formData={formData} /> : null}
       </main>
     </>
   );
 }
+
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  const formId = ctx.params?.formId;
+  const session = await getSession(ctx);
+
+  return {
+    props: {
+      formId,
+      // formData,
+    },
+  };
+};

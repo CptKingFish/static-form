@@ -110,16 +110,14 @@ model FormItemOption {
 model FormItemResponse {
     id        String   @id @default(cuid())
     response  String?
-    url       String?
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    formItem   FormItem        @relation(fields: [formItemId], references: [id])
+    formItem   FormItem         @relation(fields: [formItemId], references: [id])
     formItemId String
-    user       User            @relation(fields: [userId], references: [id])
+    user       User             @relation(fields: [userId], references: [id])
     userId     String
-    option     FormItemOption? @relation(fields: [optionId], references: [id])
-    optionId   String?
+    options    FormItemOption[]
 }
 
 enum FormItemType {
