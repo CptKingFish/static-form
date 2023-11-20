@@ -221,11 +221,57 @@ export const formRouter = createTRPCRouter({
               message: "Invalid radio/dropdown response",
             });
           }
+
+          if (existingResponse) {
+            return ctx.db.formItemResponse.update({
+              where: { id: existingResponse.id },
+              data: {
+                options: {
+                  connect: { id: response },
+                },
+              },
+            });
+          } else {
+            return ctx.db.formItemResponse.create({
+              data: {
+                formItemId: item.id,
+                userId: ctx.session.user.id,
+                options: {
+                  connect: { id: response },
+                },
+              },
+            });
+          }
         } else if (["CHECKBOX"].includes(type)) {
           if (!Array.isArray(response)) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "Invalid checkbox response",
+            });
+          }
+
+          if (existingResponse) {
+            return ctx.db.formItemResponse.update({
+              where: { id: existingResponse.id },
+              data: {
+                options: {
+                  connect: response.map((optionId) => ({
+                    id: optionId,
+                  })),
+                },
+              },
+            });
+          } else {
+            return ctx.db.formItemResponse.create({
+              data: {
+                formItemId: item.id,
+                userId: ctx.session.user.id,
+                options: {
+                  connect: response.map((optionId) => ({
+                    id: optionId,
+                  })),
+                },
+              },
             });
           }
         } else if (["TEXT", "EMAIL", "FILE", "DATE", "TIME"].includes(type)) {
@@ -235,85 +281,27 @@ export const formRouter = createTRPCRouter({
               message: "Invalid text/email/file/date/time response",
             });
           }
+          if (existingResponse) {
+            return ctx.db.formItemResponse.update({
+              where: { id: existingResponse.id },
+              data: {
+                response: response,
+              },
+            });
+          } else {
+            return ctx.db.formItemResponse.create({
+              data: {
+                formItemId: item.id,
+                userId: ctx.session.user.id,
+                response: response,
+              },
+            });
+          }
         } else {
-          console.log(["TEXT"].includes(type));
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Invalid response",
           });
-        }
-
-        if (existingResponse) {
-          if (["RADIO", "DROPDOWN"].includes(type)) {
-            return ctx.db.formItemResponse.update({
-              where: { id: existingResponse.id },
-              data: {
-                options: {
-                  connect: { id: response as string },
-                },
-              },
-            });
-          } else if (["CHECKBOX"].includes(type)) {
-            return ctx.db.formItemResponse.update({
-              where: { id: existingResponse.id },
-              data: {
-                options: {
-                  connect: (response as string[]).map((optionId) => ({
-                    id: optionId,
-                  })),
-                },
-              },
-            });
-          } else if (["TEXT", "EMAIL", "FILE", "DATE", "TIME"].includes(type)) {
-            return ctx.db.formItemResponse.update({
-              where: { id: existingResponse.id },
-              data: {
-                response: response as string,
-              },
-            });
-          } else {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Invalid response",
-            });
-          }
-        } else {
-          if (["RADIO", "DROPDOWN"].includes(type)) {
-            return ctx.db.formItemResponse.create({
-              data: {
-                formItemId: item.id,
-                userId: ctx.session.user.id,
-                options: {
-                  connect: { id: response as string },
-                },
-              },
-            });
-          } else if (["CHECKBOX"].includes(type)) {
-            return ctx.db.formItemResponse.create({
-              data: {
-                formItemId: item.id,
-                userId: ctx.session.user.id,
-                options: {
-                  connect: (response as string[]).map((optionId) => ({
-                    id: optionId,
-                  })),
-                },
-              },
-            });
-          } else if (["TEXT", "EMAIL", "FILE", "DATE", "TIME"].includes(type)) {
-            return ctx.db.formItemResponse.create({
-              data: {
-                formItemId: item.id,
-                userId: ctx.session.user.id,
-                response: response as string,
-              },
-            });
-          } else {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Invalid response",
-            });
-          }
         }
       });
 

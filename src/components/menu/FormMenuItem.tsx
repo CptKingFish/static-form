@@ -39,9 +39,9 @@ export default function FormMenuItem({
             <h3 className="truncate text-sm font-medium text-gray-900">
               {name}
             </h3>
-            <span className="inline-flex flex-shrink-0 items-center rounded-full bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+            {/* <span className="inline-flex flex-shrink-0 items-center rounded-full bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
               Submitted
-            </span>
+            </span> */}
           </div>
           <p className="mt-1 truncate text-sm text-gray-500">
             Last Updated:
